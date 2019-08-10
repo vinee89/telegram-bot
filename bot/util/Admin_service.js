@@ -9,4 +9,9 @@ async function broadcastMessage(bot, msg){
     }
 }
 
-module.exports = {broadcastMessage};
+async function isRegistered(id){
+    var exists = await Admin.findOne({tg_id: id});
+    return exists !== null;
+}
+
+module.exports = {broadcastMessage, isRegistered};
