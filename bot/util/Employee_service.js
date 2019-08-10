@@ -24,4 +24,8 @@ async function registerNewEmployee(tg_id, first_name, username){
     await new_employee.save();
 }
 
-module.exports = {isRegistered, registerNewEmployee};
+async function isCheckedIn(id){
+    var emp =  await Employee.findOne({tg_id: id});
+    return emp.checked_in;
+}
+module.exports = {isRegistered, registerNewEmployee, isCheckedIn};

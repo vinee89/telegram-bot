@@ -9,8 +9,12 @@ module.exports.initBot = function(bot)
         msg.text.toLowerCase()
         if(msg.text.startsWith('/start')) {
             await MessageHandlder.handleStartMessage(bot, msg);
-        } else if(msg.text.toLowerCase() === '/clockin'){
-            await MessageHandlder.handleClockIn(bot, msg);
+        } else if(await EmployeeService.isRegistered(msg.from.id)){
+            if(msg.text.toLowerCase() === '/clockin'){
+                await MessageHandlder.handleClockIn(bot, msg);
+            } else if(msg.text.toLowerCase() === '/clockout') {
+                await MessageHandlder.handleClockOut(bot, msg);
+            }
         }
     })
 
