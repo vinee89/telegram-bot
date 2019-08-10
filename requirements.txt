@@ -1,0 +1,199 @@
+Flow for Telegram Attendance Bot
+
+User Roles:
+Employee (to be approved by admin manually)
+Admin
+
+Employee Functions
+
+User: /start
+Bot: Welcome to XYZ Bot, your unique id is {unique-user-id}.
+(Admin will enter this unique-user-id in the database so that user is activated)
+
+------------------------------------------------------------------------------------------------------------
+
+/clockin
+Employee:
+Normal Message: Your attendance is marked at 10:10am
+Late Message: Your attendance is marked at 10:20am and marked [late] by 5 mins.
+If time is till 10:14am show normal message. If beyond 10:15 show late message.
+
+In-Line: Clock Out button
+
+Admin:
+Normal message: {user-name} has logged-in at 10:10am
+Late message: {user-name} has logged-in at 10:20am and marked [late] by 5 mins
+
+------------------------------------------------------------------------------------------------------------
+
+/clockout
+Employee: 
+You have been logged out at 06:50pm. You worked for 8 hours 15 mins.
+
+Admin:
+{user-name} has logged-out at 06:50pm. Total worked for 8 hours 15 mins.
+
+------------------------------------------------------------------------------------------------------------
+
+/holidays
+Table of holidays for current month.
+In-line keyboard: "Previous", "Next". (When clicking on next, it will show holidays in next month) (Use font, fixed-width for tables)
+
+Example:
+August 2019
+Date 	Holiday
+12.09	XYZ
+22.09	ABC
+
+------------------------------------------------------------------------------------------------------------
+
+/applyleave
+Bot: Select type of leave. Keyboard: "Half Day", "Full Day", "Work from Home", "Leave w/o Pay", "Cancel".
+Bot: Keyboard: "Single Day", "Multiple Days".
+Select date or daterange
+Bot: Enter details about your leave.
+Submit.
+Bot: Your leave application has been sent & is currently waiting approval, click /myleaves to check status.
+
+Admin: {user-name} has applied for leave:
+
+Type: Half Day
+Date
+Details
+Keyboard: "Approve", "Reject".
+Send message to employee.
+
+------------------------------------------------------------------------------------------------------------
+
+/myleaves
+(Use font, fixed-width for tables, sorting new to old). Show only for current financial year April to March.
+
+Example
+Date 			Type 		Status
+31.12			Full Day 	Pending
+12.07			Half Day 	Approved
+12.04			Full Day 	Rejected
+22.03-25.03		Full Days 	Approved
+
+Summary (count only approved ones)
+Half Days - 1
+Full Days - 5
+
+------------------------------------------------------------------------------------------------------------
+
+Reminders
+10:15am (Monday to Saturday) - Reminder to log-in, are you running late? /sendmessage /applyleave
+
+07:15pm (Monday to Saturday) - You havent logged out yet, do you want to /clockout ?
+Show only if logged-in & if not on approve leave or Sunday.
+
+Auto Log Out Employees at 9pm.
+Employee: You have been auto logged-out. You worked for 8 hours 15 mins.
+Admin: {user-name} has been auto logged-out at 09:00pm. Total worked for 12 hours 15 mins.
+
+------------------------------------------------------------------------------------------------------------
+
+**ADMIN Only Functions**
+
+
+/reports
+Keyboard: "Attendance", "Leaves", "Employee"
+
+**Attendance**
+Select Date
+
+10-Aug
+user 	   clockin     clockout 	total
+user1      10:10am     06:50pm		xx hours
+user2      10:11am     06:48pm		xx hours
+
+In-line keyboard: "Previous Day", "Next Day", "Cancel"
+
+**Leaves**
+Keyboard: "Users", "Pending"
+
+*Users*
+(Show list of all users)
+
+/user1leaves
+/user2leaves
+
+Admin: /user1leaves
+
+Date 			Type 		Status
+31.12			Full Day 	Pending
+12.07			Half Day 	Approved
+12.04			Full Day 	Rejected
+22.03-25.03		Full Days 	Approved
+
+Summary (count only approved ones)
+Half Days - 1
+Full Days - 5
+
+*Pending*
+(Show list of all pending)
+User-Name
+Type: Half Day
+Date
+Details
+Inline keyboard: "Approve", "Reject"
+
+**Employee**
+(Show list of all users)
+
+/user1
+/user2
+
+Admin: /user1
+
+April: 
+Late - 3 days
+
+May:
+Halfday - 1 
+Leave w/o Pay - 4
+
+Jun:
+Jul:
+Aug:
+Sep:
+Oct:
+Nov:
+Dec:
+Jan:
+Feb:
+Mar:
+
+Total:
+Late - x days
+Half Day
+Full Day
+Work from Home
+Leave w/o Pay
+
+------------------------------------------------------------------------------------------------------------
+
+/notice
+Admin will enter message here. This message will be sent to all users immediately as broadcast push message.
+
+------------------------------------------------------------------------------------------------------------
+
+/holidays
+Keyboard: Add New, View All
+
+Add New: 
+1. Enter Date (31 December)
+2. Enter Name (New Years)
+
+View All
+25/12/19 - Christmas
+31/12/19 - New Years
+
+------------------------------------------------------------------------------------------------------------
+
+
+If user already clocked-out and then enters command /clockout
+Oops! You're not logged in today, click /clockin to first log-in.
+
+If user is clocked-in and enters /clockin
+Oops! You're already clocked-in, did you mean /clockout ?
