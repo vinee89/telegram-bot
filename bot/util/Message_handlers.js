@@ -1,10 +1,13 @@
 const Admin = require('../../models/Admin.model');
 const Employee = require('../../models/Employee.model')
 const Holiday = require('../../models/Holiday.model')
+const Leave = require('../../models/Leaves.model');
 const EmployeeService = require('./Employee_service');
 const AdminService = require('./Admin_service');
 const moment = require('moment')
 const tz = require('moment-timezone');
+
+const leaveConstants = require('../../constants/Leave.constants');
 
 /// These objects are used as maps to maintain conversation with the users.
 /// The idea was taken from https://github.com/yagop/node-telegram-bot-api/issues/197#issuecomment-251189417
@@ -71,7 +74,7 @@ async function handleClockIn(bot, msg){
 
     if(await EmployeeService.isCheckedIn(msg.from.id) === false){
         var now = moment(msg.date * 1000).tz('Asia/Colombo');
-        var goal = moment().hours(10).minutes(15)
+        var goal = moment().tz('Asia/Colombo').hours(10).minutes(15)
 
         if(now.isAfter(goal)) {
             var late = Math.floor(now.diff(goal)/1000/60);
@@ -200,4 +203,114 @@ async function handleNotice(bot, msg){
     }
     bot.sendMessage(msg.from.id, "Message has been sent.")
 }
-module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice};
+
+const leaveQueue = {};
+async function handleApplyLeave(bot, msg){
+    const opts = {
+        reply_markup: JSON.stringify({
+          keyboard: [
+            ['Half Day'],
+            ['Full Day'],
+            ['Work from home'],
+            ['Leave w/o pay'],
+            ['Cancel']
+          ],
+          one_time_keyboard: true
+        }),
+      };
+      leaveQueue[msg.from.id] = true;
+      bot.sendMessage(msg.from.id, "Pick an option.", opts);
+};
+
+const leaveQuestionarieQueue = {};
+const leaves = {};
+async function handleSelectLeave(bot, msg){
+
+    if(leaveQueue[msg.from.id]){
+        delete leaveQueue[msg.from.id];
+        if(msg.text.toLowerCase() !== 'cancel'){
+            leaves[msg.from.id] = {type: msg.text};
+            leaveQuestionarieQueue[msg.from.id] = true;
+            bot.sendMessage(msg.from.id, "Select date or timerange. Date must be in the format DD/MM/YY, timeranges must be in the format DD/MM/YY DD/MM/YY.")
+        }
+    }
+}
+
+const d = {test: '123'};
+async function handleLeaveDate(bot, msg){
+    if(leaveQuestionarieQueue[msg.from.id]){
+        delete leaveQuestionarieQueue[msg.from.id];
+        const dates = msg.text.split(' ');
+        var valid = true;
+        for(date of dates) if(!moment(date, "DD/MM/YYYY").isValid()) valid = false;
+        if(valid){
+            var date1 = moment(dates[0], "DD/MM/YY");
+            var date2 = null;
+            if(dates.length === 2)  date2 = moment(dates[1], "DD/MM/YY");
+            leaves[msg.from.id]['date1'] = date1;
+            leaves[msg.from.id]['date2'] = date2;
+
+            d[msg.from.id] = true;
+            bot.sendMessage(msg.from.id, "Enter the details of your leave with the following format \/details [your leave's details]")
+
+        } else {
+            bot.sendMessage(msg.from.id, "Date(s) must be valid.");
+        }
+    }
+}
+
+async function handleDetails(bot, msg){
+    if(d[msg.from.id]){
+        
+        var details = msg.text.split(' ');
+        details.shift();
+        details = details.join(' ');
+
+        var employee_id = await Employee.find({tg_id: msg.from.id});
+        employee_id = employee_id._id;
+
+        var date1 = leaves[msg.from.id]['date1'];
+        var date2 = leaves[msg.from.id]['date2'];
+        var type = leaveConstants.LEAVE_TO_NUMBER[leaves[msg.from.id]['type'].toLowerCase()]
+        const leave = new Leave({
+            date1,
+            date2,
+            type,
+            details,
+            employee: employee_id
+        })
+
+        var id = await leave.save();
+        id = id._id;
+        console.log(id);
+
+        const opts = {
+            reply_markup: JSON.stringify({
+                inline_keyboard: [[
+                    {
+                        text: 'Accept',
+                        callback_data: JSON.stringify({
+                            query: 'accept-leave',
+                            request_id: id
+                        })
+                    },
+                    {
+                        text: 'Decline',
+                        callback_data: JSON.stringify({
+                            query: 'reject-leave',
+                            request_id: id
+                        })
+                    }
+                ]]
+            })
+          };
+          
+          AdminService.broadcastMessage(bot, `${msg.from.first_name} has requested a leave:\n
+          type: ${leaves[msg.from.id]['type']}\n
+          date: ${leaves[msg.from.id]['date1'].format("DD/MM/YY")} ${(leaves[msg.from.id]['date2'] !== null ? 'to '+ leaves[msg.from.id]['date2'].format("DD/MM/YY") : "")}\n
+          deatils: ${details}`, opts);
+          delete d[msg.from.id]
+          delete leaves[msg.from.id];
+    }
+}
+module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails};

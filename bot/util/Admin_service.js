@@ -1,11 +1,12 @@
 const Admin = require('../../models/Admin.model');
 
-async function broadcastMessage(bot, msg){
+async function broadcastMessage(bot, msg, opts = null){
     
     var admins = await Admin.find({});
 
     for(admin of admins){
-        bot.sendMessage(admin.tg_id, msg);
+        if(opts === null) bot.sendMessage(admin.tg_id, msg);
+        else bot.sendMessage(admin.tg_id, msg, opts);
     }
 }
 

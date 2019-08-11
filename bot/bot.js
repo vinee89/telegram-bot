@@ -1,16 +1,20 @@
 const EmployeeService = require('./util/Employee_service');
 const AdminService = require('./util/Admin_service')
 const MessageHandlder = require('./util/Message_handlers')
-const utils = require('./util/index')
+const utils = require('./util/index');
+const Leave = require('../models/Leaves.model');
 process.env.NTBA_FIX_319 = 1;
 
 
 module.exports.initBot = function(bot)
 {
     const dateRegex = /\d\d\/\d\d\/\d\d\d\d (.)*/
+
+    const leaveRegex = /\d\d\/\d\d\/\d\d/;
+    const leaveRangeRegex = /\d\d\/\d\d\/\d\d \d\d\/\d\d\/\d\d/
     bot.on('message', async function(msg){
 
-        msg.text.toLowerCase()
+        const leaveOptions = ['half day', 'full day', 'work from home', 'leave w/o pay', 'cancel'];
         var isAdmin = await AdminService.isRegistered(msg.from.id);
         var isEmployee = await EmployeeService.isRegistered(msg.from.id)
         if(msg.text.startsWith('/start') &&  !isAdmin) {
@@ -22,6 +26,14 @@ module.exports.initBot = function(bot)
                 await MessageHandlder.handleClockOut(bot, msg);
             } else if(msg.text.toLowerCase() === '/holidays'){
                 await MessageHandlder.handleViewHolidays(bot, msg);
+            } else if(msg.text.toLowerCase() === '/applyleave'){
+                await MessageHandlder.handleApplyLeave(bot, msg);
+            } else if(leaveOptions.includes(msg.text.toLowerCase())){
+                await MessageHandlder.handleSelectLeave(bot, msg);
+            } else if(leaveRegex.test(msg.text) || leaveRangeRegex.test(msg.text)){
+                await MessageHandlder.handleLeaveDate(bot, msg);
+            } else if(msg.text.toLowerCase().startsWith('/details')){
+                await MessageHandlder.handleDetails(bot, msg);
             }
         } else if(isAdmin){
             if(msg.text.toLowerCase() === '/holidays'){
@@ -40,7 +52,6 @@ module.exports.initBot = function(bot)
 
     ///Callback queries for new users.
     bot.on('callback_query', async function(query){
-        console.log(query)
         query.data = JSON.parse(query.data);
         if(query.data.query === 'accept-new-user'){
             if(await EmployeeService.isRegistered(query.data.user) === false){
@@ -51,7 +62,13 @@ module.exports.initBot = function(bot)
             }
         } else if(query.data.query === 'reject-new-user'){
             bot.sendMessage(query.data.user, `You've been rejected.`)
-        } 
+        } else if(query.data.query === 'accept-leave'){
+            await Leave.updateOne({_id: query.data.request_id}, {$set: {status: 1}});
+            bot.sendMessage(query.from.id, "Approved.");
+        } else if(query.data.query === 'reject-leave'){
+            await Leave.updateOne({_id: query.data.request_id}, {$set: {status: 1}});
+            bot.sendMessage(query.from.id, "Rejected");
+        }
     })
 }
 
