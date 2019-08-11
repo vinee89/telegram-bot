@@ -3,6 +3,7 @@ const AdminService = require('./util/Admin_service')
 const MessageHandlder = require('./util/Message_handlers')
 const utils = require('./util/index');
 const Leave = require('../models/Leaves.model');
+const constants = require('../constants/Leave.constants');
 process.env.NTBA_FIX_319 = 1;
 
 
@@ -63,11 +64,22 @@ module.exports.initBot = function(bot)
         } else if(query.data.query === 'reject-new-user'){
             bot.sendMessage(query.data.user, `You've been rejected.`)
         } else if(query.data.query === 'accept-leave'){
-            await Leave.updateOne({_id: query.data.request_id}, {$set: {status: 1}});
-            bot.sendMessage(query.from.id, "Approved.");
+            var req = await Leave.findOne({_id: query.data.request_id});
+            if(req.status === 0){
+                await Leave.updateOne({_id: query.data.request_id}, {$set: {status: constants.STATUS_ACCEPTED}});
+                bot.sendMessage(query.from.id, "Approved.");
+            } else {
+                bot.sendMessage(query.from.id, `This request has already been ${constants.STATUS_TO_NUMBER[req.status]}`)
+            }
         } else if(query.data.query === 'reject-leave'){
-            await Leave.updateOne({_id: query.data.request_id}, {$set: {status: 1}});
-            bot.sendMessage(query.from.id, "Rejected");
+            var req = await Leave.findOne({_id: query.data.request_id});
+            if(req.status === 0){
+                await Leave.updateOne({_id: query.data.request_id}, {$set: {status: constants.STATUS_REJECTED}});
+                bot.sendMessage(query.from.id, "Rejected");
+            } else {
+                bot.sendMessage(query.from.id, `This request has already been ${constants.STATUS_TO_NUMBER[req.status]}`)
+            }
+            
         }
     })
 }
