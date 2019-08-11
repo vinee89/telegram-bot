@@ -1,6 +1,7 @@
 const EmployeeService = require('./util/Employee_service');
 const AdminService = require('./util/Admin_service')
 const MessageHandlder = require('./util/Message_handlers')
+const utils = require('./util/index')
 process.env.NTBA_FIX_319 = 1;
 
 
@@ -31,20 +32,26 @@ module.exports.initBot = function(bot)
                 await MessageHandlder.handleDate(bot, msg)
             } else if(msg.text.toLowerCase() === "view all"){
                 await MessageHandlder.handleViewHolidays(bot, msg);
+            } else if(msg.text.startsWith('/notice')){
+                await MessageHandlder.handleNotice(bot, msg);
             }
         }
     })
 
     ///Callback queries for new users.
     bot.on('callback_query', async function(query){
-        
+        console.log(query)
         query.data = JSON.parse(query.data);
         if(query.data.query === 'accept-new-user'){
-            await EmployeeService.registerNewEmployee(query.data.user, query.data.name, query.data.username)
-            bot.sendMessage(query.data.user, `You have been accepted.\nWelcome to XYZ bot, your unique id is ${query.data.user}`);
+            if(await EmployeeService.isRegistered(query.data.user) === false){
+                await EmployeeService.registerNewEmployee(query.data.user, query.data.name, query.data.username)
+                bot.sendMessage(query.data.user, `You have been accepted.\nWelcome to XYZ bot, your unique id is ${query.data.user}`);
+            } else {
+                bot.sendMessage(query.from.id, "The user has already been accepted.")
+            }
         } else if(query.data.query === 'reject-new-user'){
             bot.sendMessage(query.data.user, `You've been rejected.`)
-        }
+        } 
     })
 }
 

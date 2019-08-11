@@ -22,6 +22,7 @@ addHoliday = {};
 async function handleStartMessage(bot, msg){
     const admins = await Admin.find();
     /// The inline keyboard displays buttons for the admins to accept/decline.
+
     const opts = {
         reply_markup: JSON.stringify({
             inline_keyboard: [[
@@ -30,8 +31,7 @@ async function handleStartMessage(bot, msg){
                     callback_data: JSON.stringify({
                         query: 'accept-new-user',
                         user: msg.from.id,
-                        name: msg.from.first_name,
-                        username: msg.from.username
+                        name: msg.from.first_name 
                     })
                 },
                 {
@@ -39,8 +39,7 @@ async function handleStartMessage(bot, msg){
                     callback_data: JSON.stringify({
                         query: 'reject-new-user',
                         user: msg.from.id,
-                        name: msg.from.first_name,
-                        username: msg.from.username
+                        name: msg.from.first_name
                     })
                 }
             ]]
@@ -71,16 +70,16 @@ async function handleStartMessage(bot, msg){
 async function handleClockIn(bot, msg){
 
     if(await EmployeeService.isCheckedIn(msg.from.id) === false){
-        var now = moment(msg.date * 1000);
+        var now = moment(msg.date * 1000).tz('Asia/Colombo');
         var goal = moment().hours(10).minutes(15)
 
         if(now.isAfter(goal)) {
             var late = Math.floor(now.diff(goal)/1000/60);
             bot.sendMessage(msg.from.id, `Your attendance is marked at ${now.format("HH:mm")}, and marked late by ${late} minutes.`);
-            await AdminService.broadcastMessage(bot, `${msg.from.first_name} has logged in at ${now.format("hh:mm")} and marked late by ${late} minutes.`)
+            await AdminService.broadcastMessage(bot, `${msg.from.first_name} has logged in at ${now.format("HH:mm")} and marked late by ${late} minutes.`)
         } else {
-            bot.sendMessage(msg.from.id, `Your attendence is market at ${now.format("HH:mm")}.`);
-            await AdminService.broadcastMessage(bot, `${msg.from.first_name} has logged in at ${now.format("hh:mm")}.`)
+            bot.sendMessage(msg.from.id, `Your attendence is marked at ${now.format("HH:mm")}.`);
+            await AdminService.broadcastMessage(bot, `${msg.from.first_name} has logged in at ${now.format("HH:mm")}.`)
         }
         await Employee.updateOne({tg_id: msg.from.id}, {checked_in: true})
         await Employee.updateOne({tg_id: msg.from.id}, {last_checked_in: new Date()})
@@ -102,17 +101,7 @@ async function handleClockOut(bot, msg){
 
     if(await EmployeeService.isCheckedIn(msg.from.id) === true){
         var employee = await Employee.findOne({tg_id: msg.from.id});
-        var check_in = employee.last_checked_in;
-        var check_in_moment = moment(check_in.getTime()).tz('Asia/Colombo');
-
-        var now = moment().tz('Asia/Colombo');
-        var diff = moment.utc(moment(now,"DD/MM/YYYY HH:mm:ss").diff(moment(check_in_moment,"DD/MM/YYYY HH:mm:ss")));
-
-        bot.sendMessage(msg.from.id, `You have been logged out at ${now.format("HH:mm")}. You worked for ${diff.hours()} hours and ${diff.minutes()} minutes.`);
-        AdminService.broadcastMessage(bot, `${msg.from.first_name} has logged out at ${now.format("HH:mm")}. Total worked for ${diff.hours()} hours and ${diff.minutes()} minutes.`)
-
-        await Employee.updateOne({tg_id: msg.from.id}, {checked_in: false})
-        await Employee.updateOne({tg_id: msg.from.id}, {last_checked_in: new Date()})
+        EmployeeService.logOutEmployee(bot, employee)
     } else {
         bot.sendMessage(msg.from.id, `Oops! You're not logged in today, click /clockin to first log-in.`)
     }
@@ -168,7 +157,11 @@ async function handleDate(bot, msg){
         if(moment(date, "DD/MM/YYYY").isValid()){
             if(message && message.length > 0){
                 delete addHoliday[msg.from.id];
-                await new Holiday({name: message, date: moment(date, "DD/MM/YYYY").format("MM/DD/YYYY")}).save();
+                date = moment(date, "DD/MM/YYYY");
+                await new Holiday({
+                    name: message, 
+                    date
+                }).save();
                 bot.sendMessage(msg.from.id, `The event ${message} has been added.`);
             } else {
                 bot.sendMessage(msg.from.id, "You must include a name for the holiday.")
@@ -189,12 +182,22 @@ async function handleViewHolidays(bot , msg){
     if((AdminService.isRegistered(msg.from.id) && adminHolidays[msg.from.id] ||
         EmployeeService.isRegistered(msg.from.id))){
             delete adminHolidays[msg.from.id];
-            var holidays = await Holiday.find({});
+            var holidays = await Holiday.find({}).sort({date: 1});
             var holiday_table = "";
             for(holiday of holidays){
                 holiday_table += `${moment(holiday.date).format("DD/MM/YY")} - ${holiday.name}\n`
             }
-            bot.sendMessage(msg.from.id, (holiday_table.length > 0 ? holiday_table : 'No holidays have been added yet.'))
+            await bot.sendMessage(msg.from.id, (holiday_table.length > 0 ? holiday_table : 'No holidays have been added yet.'))
     }
 }
-module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays};
+
+async function handleNotice(bot, msg){
+    var text = msg.text.split(' ');
+    text.shift();
+    if(text.length > 0){
+        text = text.join(' ')
+        await EmployeeService.broadcastMessageToEmployees(bot, `📣 Notice: ${text}`)
+    }
+    bot.sendMessage(msg.from.id, "Message has been sent.")
+}
+module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice};
