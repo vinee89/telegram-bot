@@ -24,7 +24,7 @@ module.exports.initBot = function(bot)
         } else if(isEmployee){
             if(msg.text.toLowerCase() === '/clockin'){
                 await MessageHandlder.handleClockIn(bot, msg);
-            } else if(msg.text.toLowerCase() === '/clockout') {
+            } else if(msg.text.toLowerCase() === '/clockout' || msg.text.toLowerCase() === 'clock out') {
                 await MessageHandlder.handleClockOut(bot, msg);
             } else if(msg.text.toLowerCase() === '/holidays'){
                 await MessageHandlder.handleViewHolidays(bot, msg);
@@ -72,13 +72,7 @@ module.exports.initBot = function(bot)
         if(query.data.query === 'accept-new-user'){
             if(await EmployeeService.isRegistered(query.data.user) === false){
                 await EmployeeService.registerNewEmployee(query.data.user, query.data.name, query.data.username)
-                bot.sendMessage(query.data.user, `You have been accepted.\nWelcome to XYZ bot, your unique id is ${query.data.user}\n\nHere is a list of functions to get you started:\n
-                /clockin - Start your day\n
-                /clockout - End your day\n
-                /holidays - List of upcoming holidays\n
-                /applyleave - Apply for leaves\n
-                /myleaves - View status of your leaves\n
-                /sendmessage - Send message to admins immediately\n`);
+                bot.sendMessage(query.data.user, `You have been accepted.\nWelcome to XYZ bot, your unique id is ${query.data.user}\n\nHere is a list of functions to get you started:\n/clockin - Start your day\n/clockout - End your day\n/holidays - List of upcoming holidays\n/applyleave - Apply for leaves\n/myleaves - View status of your leaves\n/sendmessage - Send message to admins immediately\n`);
             } else {
                 bot.sendMessage(query.from.id, "The user has already been accepted.")
             }

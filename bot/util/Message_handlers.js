@@ -78,10 +78,20 @@ async function handleClockIn(bot, msg){
         var now = moment(msg.date * 1000).tz('Asia/Colombo');
         var goal = moment().tz('Asia/Colombo').hours(10).minutes(15)
 
+        const opts = {
+            reply_markup: JSON.stringify({
+              keyboard: [
+                ['Clock out'],
+                ['cancel']
+              ],
+              one_time_keyboard: true
+            }),
+          };
         if(now.isAfter(goal)) {
-            var late = Math.floor(now.diff(goal)/1000/60);
-            bot.sendMessage(msg.from.id, `Your attendance is marked at ${now.format("HH:mm")}, and marked late by ${late} minutes.`);
-            await AdminService.broadcastMessage(bot, `${msg.from.first_name} has logged in at ${now.format("HH:mm")} and marked late by ${late} minutes.`)
+            var late = moment.utc(moment(now,"DD/MM/YYYY HH:mm:ss").diff(moment(goal,"DD/MM/YYYY HH:mm:ss")));
+            bot.sendMessage(msg.from.id, `Your attendance is marked at ${now.format("HH:mm")}, and marked late by ${late.hours()} hours and ${late.minutes()} minutes.`, opts);
+
+            await AdminService.broadcastMessage(bot, `${msg.from.first_name} has logged in at ${now.format("HH:mm")} and marked late by ${late.hours()} hours and ${late.minutes()} minutes.`, opts)
         } else {
             bot.sendMessage(msg.from.id, `Your attendence is marked at ${now.format("HH:mm")}.`);
             await AdminService.broadcastMessage(bot, `${msg.from.first_name} has logged in at ${now.format("HH:mm")}.`)
