@@ -306,10 +306,7 @@ async function handleDetails(bot, msg){
             })
           };
           
-          AdminService.broadcastMessage(bot, `${msg.from.first_name} has requested a leave:\n
-          type: ${leaves[msg.from.id]['type']}\n
-          date: ${leaves[msg.from.id]['date1'].format("DD/MM/YY")} ${(leaves[msg.from.id]['date2'] !== null ? 'to '+ leaves[msg.from.id]['date2'].format("DD/MM/YY") : "")}\n
-          deatils: ${details}`, opts);
+          AdminService.broadcastMessage(bot, `${msg.from.first_name} has requested a leave:\ntype: ${leaves[msg.from.id]['type']}\ndate: ${leaves[msg.from.id]['date1'].format("DD/MM/YY")} ${(leaves[msg.from.id]['date2'] !== null ? 'to '+ leaves[msg.from.id]['date2'].format("DD/MM/YY") : "")}\ndeatils: ${details}`, opts);
           delete d[msg.from.id]
           delete leaves[msg.from.id];
     }
@@ -383,8 +380,6 @@ async function handleEmployees(bot, msg){
         };
         message += table.toString();
         message += "</pre>";
-
-        
         bot.sendMessage(msg.from.id, message, opts);
     }
 }
@@ -396,4 +391,40 @@ async function handleAttendence(bot, msg, date){
     }
 }
 
-module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails, handleMyLeaves, handleReports, handleEmployees, handleAttendence};
+async function handleLeaves(bot, msg){
+    if(reports[msg.from.id]){
+        delete reports[msg.from.id];
+        const pendings = await Leave.find({status: leaveConstants.STATUS_PENDING}).populate('employee');
+        
+        for(pending of pendings){
+            const opts = {
+                reply_markup: JSON.stringify({
+                    inline_keyboard: [[
+                        {
+                            text: 'Accept',
+                            callback_data: JSON.stringify({
+                                query: 'accept-leave',
+                                request_id: pending._id
+                            })
+                        },
+                        {
+                            text: 'Decline',
+                            callback_data: JSON.stringify({
+                                query: 'reject-leave',
+                                request_id: pending._id
+                            })
+                        }
+                    ]]
+                })
+              };
+            
+            var message = `type: ${leaveConstants.NUMBER_TO_LEAVE[pending.type]}\ndate: ${moment(pending.date1).format("DD/MM/YY")} ${(pending.date2 !== null ? 'to '+ moment(pending.date2).format("DD/MM/YY") : "")}\ndeatils: ${pending.details}`
+            bot.sendMessage(msg.from.id, message, opts);
+        }
+
+        if(pendings.length === 0){
+            bot.sendMessage(msg.from.id, "There are no pending leaves.")
+        }
+    }
+}
+module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails, handleMyLeaves, handleReports, handleEmployees, handleAttendence, handleLeaves};

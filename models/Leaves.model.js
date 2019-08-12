@@ -9,7 +9,7 @@ const LeaveSchema = mongoose.Schema({
         default: 0,
         type: Number
     },
-    employee: {type: mongoose.Schema.Types.ObjectId, ref: 'Employee'}
+    employee: {type: mongoose.Schema.Types.ObjectId, ref: 'employee'}
 })
 
 module.exports = mongoose.model("leave", LeaveSchema);

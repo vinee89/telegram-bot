@@ -58,6 +58,8 @@ module.exports.initBot = function(bot)
                 await MessageHandlder.handleMyLeaves(bot, msg, true)
             } else if(msg.text.toLowerCase() === 'attendance'){
                 await MessageHandlder.handleAttendence(bot, msg, new Date());
+            } else if(msg.text.toLowerCase() === 'leaves'){
+                await MessageHandlder.handleLeaves(bot, msg);
             }
         }
     })
