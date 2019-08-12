@@ -2,10 +2,12 @@ const Admin = require('../../models/Admin.model');
 const Employee = require('../../models/Employee.model')
 const Holiday = require('../../models/Holiday.model')
 const Leave = require('../../models/Leaves.model');
+const Log = require('../../models/Logs.model')
 const EmployeeService = require('./Employee_service');
 const AdminService = require('./Admin_service');
 const moment = require('moment')
 const tz = require('moment-timezone');
+var AsciiTable = require('ascii-table')
 
 const leaveConstants = require('../../constants/Leave.constants');
 
@@ -236,7 +238,7 @@ async function handleSelectLeave(bot, msg){
     }
 }
 
-const d = {test: '123'};
+const d = {};
 async function handleLeaveDate(bot, msg){
     if(leaveQuestionarieQueue[msg.from.id]){
         delete leaveQuestionarieQueue[msg.from.id];
@@ -266,7 +268,7 @@ async function handleDetails(bot, msg){
         details.shift();
         details = details.join(' ');
 
-        var employee_id = await Employee.find({tg_id: msg.from.id});
+        var employee_id = await Employee.findOne({tg_id: msg.from.id});
         employee_id = employee_id._id;
 
         var date1 = leaves[msg.from.id]['date1'];
@@ -282,7 +284,6 @@ async function handleDetails(bot, msg){
 
         var id = await leave.save();
         id = id._id;
-        console.log(id);
 
         const opts = {
             reply_markup: JSON.stringify({
@@ -313,4 +314,86 @@ async function handleDetails(bot, msg){
           delete leaves[msg.from.id];
     }
 }
-module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails};
+
+async function handleMyLeaves(bot, msg, admin = false){
+    var id = msg.from.id;
+    if(admin){
+        var id_regex = /(\d)+/;
+        id = id_regex.exec(msg.text);
+    } 
+    const employee = await Employee.findOne({tg_id: id});
+    if(employee){
+        const leaves = await Leave.find({employee: employee._id}).sort({date1: -1});
+        const opts = { parse_mode: 'HTML' };
+        
+        var response = "<pre>";
+        var types = [0,0,0,0];
+        for(leave of leaves){
+            response += moment(leave.date1).format("DD/MM/YY") + (leave.date2 ? " - " + moment(leave.date2).format("DD/MM/YY") + " " : "            ");
+            response += leaveConstants.NUMBER_TO_LEAVE[leave.type] + " ";
+            response += leaveConstants.STATUS_TO_NUMBER[leave.status] + "\n"
+    
+            if(leave.status === leaveConstants.STATUS_ACCEPTED){
+                types[leave.type]++;
+            }
+        }
+        response +="\nTotals:\n"
+        for(let i = 0; i < types.length; i++){
+            response += leaveConstants.NUMBER_TO_LEAVE[i] + ": " + types[i] + "\n"
+        }
+        response += "</pre>\n"
+        bot.sendMessage(msg.from.id, response, opts)
+    } else {
+        bot.sendMessage(msg.from.id, "Employee not found.")
+    }
+    
+}
+
+const reports = {};
+async function handleReports(bot, msg){
+    const opts = {
+        reply_markup: JSON.stringify({
+          keyboard: [
+            ['Attendance'],
+            ['Leaves'],
+            ['Employee']
+          ],
+          one_time_keyboard: true
+        }),
+      };
+      reports[msg.from.id] = true;
+
+    bot.sendMessage(msg.from.id, "Pick one report", opts);
+}
+
+async function handleEmployees(bot, msg){
+    if(reports[msg.from.id]){
+        delete reports[msg.from.id];
+        var employees = await Employee.find({});
+
+        const opts = {
+            parse_mode: 'HTML',
+        };
+
+        var message = "<pre>";
+        var table =  new AsciiTable('Employees');
+        table.setHeading('', 'Name', 'Unique Id');
+        for(let i = 0; i < employees.length; i++){
+            table.addRow((i+1)+"", employees[i].first_name, (employees[i].tg_id)+"")
+        };
+        message += table.toString();
+        message += "</pre>";
+
+        
+        bot.sendMessage(msg.from.id, message, opts);
+    }
+}
+
+async function handleAttendence(bot, msg, date){
+    if(reports[msg.from.id]){
+        delete reports[msg.from.id];
+        await AdminService.generateDayReport(bot, msg, date);
+    }
+}
+
+module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails, handleMyLeaves, handleReports, handleEmployees, handleAttendence};

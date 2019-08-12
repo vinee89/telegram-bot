@@ -13,6 +13,7 @@ module.exports.initBot = function(bot)
 
     const leaveRegex = /\d\d\/\d\d\/\d\d/;
     const leaveRangeRegex = /\d\d\/\d\d\/\d\d \d\d\/\d\d\/\d\d/
+    const userLeavesRegex = /\/user(\d)*leaves/
     bot.on('message', async function(msg){
 
         const leaveOptions = ['half day', 'full day', 'work from home', 'leave w/o pay', 'cancel'];
@@ -35,6 +36,8 @@ module.exports.initBot = function(bot)
                 await MessageHandlder.handleLeaveDate(bot, msg);
             } else if(msg.text.toLowerCase().startsWith('/details')){
                 await MessageHandlder.handleDetails(bot, msg);
+            } else if(msg.text.toLowerCase() === '/myleaves') {
+                await MessageHandlder.handleMyLeaves(bot, msg);
             }
         } else if(isAdmin){
             if(msg.text.toLowerCase() === '/holidays'){
@@ -47,6 +50,14 @@ module.exports.initBot = function(bot)
                 await MessageHandlder.handleViewHolidays(bot, msg);
             } else if(msg.text.startsWith('/notice')){
                 await MessageHandlder.handleNotice(bot, msg);
+            } else if(msg.text.toLowerCase() === '/reports'){
+                await MessageHandlder.handleReports(bot, msg);
+            } else if(msg.text.toLowerCase() === 'employee'){
+                await MessageHandlder.handleEmployees(bot, msg);
+            } else if(userLeavesRegex.test(msg.text.toLowerCase())){
+                await MessageHandlder.handleMyLeaves(bot, msg, true)
+            } else if(msg.text.toLowerCase() === 'attendance'){
+                await MessageHandlder.handleAttendence(bot, msg, new Date());
             }
         }
     })
@@ -79,7 +90,9 @@ module.exports.initBot = function(bot)
             } else {
                 bot.sendMessage(query.from.id, `This request has already been ${constants.STATUS_TO_NUMBER[req.status]}`)
             }
-            
+        } else if(query.data.query === 'previous-day' || query.data.query === 'next-day'){
+            query.message.from.id = query.message.chat.id
+            await AdminService.generateDayReport(bot, query.message, query.data.date, query)
         }
     })
 }

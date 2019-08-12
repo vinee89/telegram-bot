@@ -1,5 +1,6 @@
 const Employee = require('../../models/Employee.model');
 const AdminService = require('./Admin_service')
+const Log = require('../../models/Logs.model')
 const moment = require('moment');
 const tz = require('moment-timezone')
 
@@ -37,7 +38,6 @@ async function broadcastMessageToEmployees(bot, msg){
     for(employee of employees){
         bot.sendMessage(employee.tg_id, msg);
     }
-
 }
 
 async function logOutEmployee(bot, employee){
@@ -50,7 +50,15 @@ async function logOutEmployee(bot, employee){
     bot.sendMessage(employee.tg_id, `You have been logged out at ${now.format("HH:mm")}. You worked for ${diff.hours()} hours and ${diff.minutes()} minutes.`);
     AdminService.broadcastMessage(bot, `${employee.first_name} has logged out at ${now.format("HH:mm")}. Total worked for ${diff.hours()} hours and ${diff.minutes()} minutes.`)
 
+    var log = new Log({
+        employee: employee._id,
+        start: employee.last_checked_in,
+        end: new Date(),
+        hours_total: diff.hours(),
+        minutes_total: diff.minutes()
+    })
+    await log.save();
     await Employee.updateOne({tg_id: employee.tg_id}, {checked_in: false})
-    await Employee.updateOne({tg_id: employee.tg_id}, {last_checked_in: new Date()})
+    await Employee.updateOne({tg_id: employee.tg_id}, {last_checked_out: new Date()})
 }
 module.exports = {isRegistered, registerNewEmployee, isCheckedIn, broadcastMessageToEmployees, logOutEmployee};
