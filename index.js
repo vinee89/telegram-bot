@@ -10,7 +10,7 @@ const Admin = require('./models/Admin.model');
 
 const port = process.env.PORT || 3000;
 
-const key = '855062719:AAEN3Rmc_pBGcQpk1RXfh7bl2adbH_6jwck';
+const key = '412554004:AAEit1eXkdo6MiKS0BQXMugQi4BKL7psgpg';
 const bot = new TelegramBot(key, {polling: true});
 
 (async function main(){

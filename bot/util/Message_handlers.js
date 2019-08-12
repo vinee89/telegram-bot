@@ -253,7 +253,7 @@ async function handleLeaveDate(bot, msg){
             leaves[msg.from.id]['date2'] = date2;
 
             d[msg.from.id] = true;
-            bot.sendMessage(msg.from.id, "Enter the details of your leave with the following format \/details [your leave's details]")
+            bot.sendMessage(msg.from.id, "Enter reason for leave.")
 
         } else {
             bot.sendMessage(msg.from.id, "Date(s) must be valid.");
@@ -264,9 +264,7 @@ async function handleLeaveDate(bot, msg){
 async function handleDetails(bot, msg){
     if(d[msg.from.id]){
         
-        var details = msg.text.split(' ');
-        details.shift();
-        details = details.join(' ');
+        var details = msg.text
 
         var employee_id = await Employee.findOne({tg_id: msg.from.id});
         employee_id = employee_id._id;
@@ -309,6 +307,8 @@ async function handleDetails(bot, msg){
           AdminService.broadcastMessage(bot, `${msg.from.first_name} has requested a leave:\ntype: ${leaves[msg.from.id]['type']}\ndate: ${leaves[msg.from.id]['date1'].format("DD/MM/YY")} ${(leaves[msg.from.id]['date2'] !== null ? 'to '+ leaves[msg.from.id]['date2'].format("DD/MM/YY") : "")}\ndeatils: ${details}`, opts);
           delete d[msg.from.id]
           delete leaves[msg.from.id];
+
+          bot.sendMessage(msg.from.id, "Your request has been sent and is under approval. To check your leave status click /myleaves")
     }
 }
 
@@ -418,7 +418,7 @@ async function handleLeaves(bot, msg){
                 })
               };
             
-            var message = `type: ${leaveConstants.NUMBER_TO_LEAVE[pending.type]}\ndate: ${moment(pending.date1).format("DD/MM/YY")} ${(pending.date2 !== null ? 'to '+ moment(pending.date2).format("DD/MM/YY") : "")}\ndeatils: ${pending.details}`
+            var message = `employee: ${pending.employee.first_name}\ntype: ${leaveConstants.NUMBER_TO_LEAVE[pending.type]}\ndate: ${moment(pending.date1).format("DD/MM/YY")} ${(pending.date2 !== null ? 'to '+ moment(pending.date2).format("DD/MM/YY") : "")}\ndeatils: ${pending.details}`
             bot.sendMessage(msg.from.id, message, opts);
         }
 
@@ -427,4 +427,14 @@ async function handleLeaves(bot, msg){
         }
     }
 }
-module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails, handleMyLeaves, handleReports, handleEmployees, handleAttendence, handleLeaves};
+
+async function handleSendMessage(bot, msg){
+    var message = msg.text.split(' ');
+    message.shift();
+    message = message.join(' ');
+
+
+    AdminService.broadcastMessage(bot, `${msg.from.first_name} says: ${message}`);
+}
+
+module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails, handleMyLeaves, handleReports, handleEmployees, handleAttendence, handleLeaves, handleSendMessage};

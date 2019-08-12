@@ -15,10 +15,10 @@ const LEAVE_TO_NUMBER = {
 }
 
 const NUMBER_TO_LEAVE  ={
-    [HALF_DAY]: 'half day       ',
-    [FULL_DAY]: 'full day       ',
-    [WORK_FROM_HOME]: 'work from home ',
-    [LEAVE_WITHOUT_PAY]: 'leave w/o pay  '
+    [HALF_DAY]:          'half day       ',
+    [FULL_DAY]:          'full day       ',
+    [WORK_FROM_HOME]:    'work from home ',
+    [LEAVE_WITHOUT_PAY]: 'wfm            '
 }
 
 const STATUS_TO_NUMBER = {

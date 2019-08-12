@@ -61,7 +61,11 @@ async function generateDayReport(bot, msg, date, query = null){
         } else {
             opts.chat_id = query.message.chat.id,
             opts.message_id = query.message.message_id
-            bot.editMessageText(message, opts)
+            try{
+                bot.editMessageText(message, opts)
+            } catch (e){
+                console.log("Error while editing message");
+            }
         }
 }
 

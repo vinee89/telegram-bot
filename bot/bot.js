@@ -34,10 +34,12 @@ module.exports.initBot = function(bot)
                 await MessageHandlder.handleSelectLeave(bot, msg);
             } else if(leaveRegex.test(msg.text) || leaveRangeRegex.test(msg.text)){
                 await MessageHandlder.handleLeaveDate(bot, msg);
-            } else if(msg.text.toLowerCase().startsWith('/details')){
-                await MessageHandlder.handleDetails(bot, msg);
             } else if(msg.text.toLowerCase() === '/myleaves') {
                 await MessageHandlder.handleMyLeaves(bot, msg);
+            } else if(msg.text.startsWith('/sendmessage')){
+                await MessageHandlder.handleSendMessage(bot, msg)
+            } else {
+                await MessageHandlder.handleDetails(bot, msg);
             }
         } else if(isAdmin){
             if(msg.text.toLowerCase() === '/holidays'){
@@ -70,7 +72,13 @@ module.exports.initBot = function(bot)
         if(query.data.query === 'accept-new-user'){
             if(await EmployeeService.isRegistered(query.data.user) === false){
                 await EmployeeService.registerNewEmployee(query.data.user, query.data.name, query.data.username)
-                bot.sendMessage(query.data.user, `You have been accepted.\nWelcome to XYZ bot, your unique id is ${query.data.user}`);
+                bot.sendMessage(query.data.user, `You have been accepted.\nWelcome to XYZ bot, your unique id is ${query.data.user}\n\nHere is a list of functions to get you started:\n
+                /clockin - Start your day\n
+                /clockout - End your day\n
+                /holidays - List of upcoming holidays\n
+                /applyleave - Apply for leaves\n
+                /myleaves - View status of your leaves\n
+                /sendmessage - Send message to admins immediately\n`);
             } else {
                 bot.sendMessage(query.from.id, "The user has already been accepted.")
             }
@@ -93,8 +101,12 @@ module.exports.initBot = function(bot)
                 bot.sendMessage(query.from.id, `This request has already been ${constants.STATUS_TO_NUMBER[req.status]}`)
             }
         } else if(query.data.query === 'previous-day' || query.data.query === 'next-day'){
-            query.message.from.id = query.message.chat.id
-            await AdminService.generateDayReport(bot, query.message, query.data.date, query)
+            try{
+                query.message.from.id = 123
+                await AdminService.generateDayReport(bot, query.message, query.data.date, query)
+            } catch (e){
+                console.log("Chat not found")
+            }
         }
     })
 }
