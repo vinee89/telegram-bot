@@ -14,7 +14,7 @@ const key = '412554004:AAEit1eXkdo6MiKS0BQXMugQi4BKL7psgpg';
 const bot = new TelegramBot(key, {polling: true});
 
 (async function main(){
-    var con_string = 'mongodb+srv://adm:adm123@cluster0-67cob.mongodb.net/test?retryWrites=true&w=majority';
+    var con_string = 'mongodb+srv://adm:adm123@cluster0-gekeo.mongodb.net/test?retryWrites=true&w=majority';
     await mongoose.connect(con_string, { useNewUrlParser: true });
     console.log('connected to the database');
     mybot.initBot(bot);
