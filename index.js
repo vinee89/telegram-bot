@@ -10,11 +10,11 @@ const Admin = require('./models/Admin.model');
 
 const port = process.env.PORT || 3000;
 
-const key = '412554004:AAEit1eXkdo6MiKS0BQXMugQi4BKL7psgpg';
+const key = '855062719:AAEN3Rmc_pBGcQpk1RXfh7bl2adbH_6jwck';
 const bot = new TelegramBot(key, {polling: true});
 
 (async function main(){
-    var con_string = 'mongodb+srv://adm:adm123@cluster0-gekeo.mongodb.net/test?retryWrites=true&w=majority';
+    var con_string = 'mongodb://localhost:27017/telegram';
     await mongoose.connect(con_string, { useNewUrlParser: true });
     console.log('connected to the database');
     mybot.initBot(bot);

@@ -13,7 +13,9 @@ module.exports.initBot = function(bot)
 
     const leaveRegex = /\d\d\/\d\d\/\d\d/;
     const leaveRangeRegex = /\d\d\/\d\d\/\d\d \d\d\/\d\d\/\d\d/
-    const userLeavesRegex = /\/user(\d)*leaves/
+    const userLeavesRegex = /^\/user(\d)*leaves$/;
+
+    const userRegex = /^\/user(\d)*$/;
     bot.on('message', async function(msg){
 
         const leaveOptions = ['half day', 'full day', 'work from home', 'leave w/o pay', 'cancel'];
@@ -62,6 +64,8 @@ module.exports.initBot = function(bot)
                 await MessageHandlder.handleAttendence(bot, msg, new Date());
             } else if(msg.text.toLowerCase() === 'leaves'){
                 await MessageHandlder.handleLeaves(bot, msg);
+            } else if(userRegex.test(msg.text.toLowerCase())){
+                await MessageHandlder.handleUserInfo(bot, msg);
             }
         }
     })

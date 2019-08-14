@@ -197,7 +197,7 @@ async function handleViewHolidays(bot , msg){
     if((AdminService.isRegistered(msg.from.id) && adminHolidays[msg.from.id] ||
         EmployeeService.isRegistered(msg.from.id))){
             delete adminHolidays[msg.from.id];
-            var holidays = await Holiday.find({}).sort({date: 1});
+            var holidays = await Holiday.find({date: {$gte: moment().startOf('day')}}).sort({date: 1});
             var holiday_table = "";
             for(holiday of holidays){
                 holiday_table += `${moment(holiday.date).format("DD/MM/YY")} - ${holiday.name}\n`
@@ -442,9 +442,79 @@ async function handleSendMessage(bot, msg){
     var message = msg.text.split(' ');
     message.shift();
     message = message.join(' ');
-
-
     AdminService.broadcastMessage(bot, `${msg.from.first_name} says: ${message}`);
 }
 
-module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails, handleMyLeaves, handleReports, handleEmployees, handleAttendence, handleLeaves, handleSendMessage};
+async function handleUserInfo(bot, msg){
+    const id = msg.text.substring(5);
+
+    const start = moment().date(1).month(3).startOf('day');
+    const end = moment().date(31).month(2).add(1, 'year').startOf('day')
+
+    const employee = await Employee.findOne({tg_id: id});
+    const emp_id = employee._id;
+    const logs = await Log.find({employee: emp_id, start: {$gte: start, $lt: end}});
+    const leaves = await Leave.find({employee: emp_id, date1: {$gte: start, $lt: end}, status: 1});
+
+    var everything = logs.concat(leaves);
+    everything.sort((a, b)=>{
+        if     (a.start && b.start) return (moment(a.start).isAfter(moment(b.start))? 1:-1)
+        else if(a.start && b.date1) return (moment(a.start).isAfter(moment(b.date1)) ? 1:-1)
+        else if(a.date1 && b.start) return (moment(a.date1).isAfter(moment(b.start))? 1:-1)
+        else if(a.date1 && b.date1) return (moment(a.date1).isAfter(moment(b.date1))? 1:-1)
+    })
+
+    var message = "";
+    let j = 0;
+
+    
+    var next_queue = [0,0,0,0];
+    for(let i = 0; i < 12; i++){
+        var current_start = start.clone().add(i, 'month');
+        var current_end = current_start.clone().endOf('month');
+
+        message += current_start.format("MMMM") + ":\n";
+        var late = 0;
+
+        var types = [0,0,0,0];
+        for(let i = 0; i < next_queue.length; i++) types[i] += next_queue[i];
+        next_queue = [0,0,0,0];
+
+        while(j < everything.length && getDate(everything[j])>= current_start && getDate(everything[j]) <= current_end){
+            if(everything[j].start){
+                var goal = moment(everything[j].start).clone().hour(10).minute(0).second(0);
+                if(moment(everything[j]).isAfter(goal)){
+                    late++;
+                }
+            } else {
+                types[everything[j].type]++
+                if(everything[j].date2){
+                    var countDate = moment(everything[j].date1).clone().endOf('day').add(1, 'days');
+                    while(!countDate.isAfter(moment(everything[j].date2))){
+                        if(countDate.month() > moment(everything[j].date1).month()){
+                            next_queue[everything[j].type]++;
+                        } else {
+                            types[everything[j].type]++;
+                        }  
+                        countDate.add(1, 'days');
+                    }
+                }
+            }
+            j++    
+        }
+        for(let i = 0; i < types.length; i++){
+            if(types[i] > 0){
+                message += "● " + leaveConstants.NUMBER_TO_LEAVE[i].trim() + " - " + types[i] + "\n";
+            }
+        }
+       if(late > 0) message += "● late - " + late +"\n";
+    }
+
+    bot.sendMessage(msg.from.id, message);
+    
+}
+
+function getDate(data){
+    return (data.date1 ? data.date1 : data.start);
+}
+module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails, handleMyLeaves, handleReports, handleEmployees, handleAttendence, handleLeaves, handleSendMessage, handleUserInfo};
