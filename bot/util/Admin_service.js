@@ -50,7 +50,7 @@ async function generateDayReport(bot, msg, date, query = null){
         table.setHeading('User', 'clockin', 'clockout', 'total');
         
         for(log of logs){
-            table.addRow(log.employee.first_name, moment(log.start).format("HH:mm"), moment(log.end).format("HH:mm"), `${log.hours_total} hours`)
+            table.addRow(log.employee.first_name, moment(log.start).tz('Asia/Colombo').format("HH:mm"), moment(log.end).tz('Asia/Colombo').format("HH:mm"), `${log.hours_total} hours`)
         }
 
         message += (logs.length > 0? table.toString() : `No messages found for for ${startd.date()}/${startd.month() + 1}/${startd.year()}`);

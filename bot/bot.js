@@ -9,10 +9,10 @@ process.env.NTBA_FIX_319 = 1;
 
 module.exports.initBot = function(bot)
 {
-    const dateRegex = /\d\d\/\d\d\/\d\d\d\d (.)*/
+    const dateRegex = /^\d\d\/\d\d\/\d\d\d\d (.)*/
 
-    const leaveRegex = /\d\d\/\d\d\/\d\d/;
-    const leaveRangeRegex = /\d\d\/\d\d\/\d\d \d\d\/\d\d\/\d\d/
+    const leaveRegex = /^\d\d\/\d\d\/\d\d$/;
+    const leaveRangeRegex = /^\d\d\/\d\d\/\d\d \d\d\/\d\d\/\d\d$/
     const userLeavesRegex = /^\/user(\d)*leaves$/;
 
     const userRegex = /^\/user(\d)*$/;
@@ -41,7 +41,10 @@ module.exports.initBot = function(bot)
             } else if(msg.text.startsWith('/sendmessage')){
                 await MessageHandlder.handleSendMessage(bot, msg)
             } else {
-                await MessageHandlder.handleDetails(bot, msg);
+                var delivered_message = await MessageHandlder.handleDeliverMessage(bot, msg);
+                if(!delivered_message){
+                    await MessageHandlder.handleDetails(bot, msg);
+                }
             }
         } else if(isAdmin){
             if(msg.text.toLowerCase() === '/holidays'){
@@ -100,7 +103,6 @@ module.exports.initBot = function(bot)
             }
         } else if(query.data.query === 'previous-day' || query.data.query === 'next-day'){
             try{
-                query.message.from.id = 123
                 await AdminService.generateDayReport(bot, query.message, query.data.date, query)
             } catch (e){
                 console.log("Chat not found")

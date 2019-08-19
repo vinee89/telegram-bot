@@ -438,11 +438,22 @@ async function handleLeaves(bot, msg){
     }
 }
 
+const messageQueue = {};
 async function handleSendMessage(bot, msg){
-    var message = msg.text.split(' ');
-    message.shift();
-    message = message.join(' ');
-    AdminService.broadcastMessage(bot, `${msg.from.first_name} says: ${message}`);
+    messageQueue[msg.from.id] = true;
+    bot.sendMessage(msg.from.id, "Type your message");
+}
+
+async function handleDeliverMessage(bot, msg){
+    if(messageQueue[msg.from.id]){
+        var message = msg.text;
+        await AdminService.broadcastMessage(bot, `${msg.from.first_name} says: ${message}`);
+        bot.sendMessage(msg.from.id, "Message sent.");
+        delete messageQueue[msg.from.id];
+
+        return true;
+    }
+    return false;
 }
 
 async function handleUserInfo(bot, msg){
@@ -517,4 +528,4 @@ async function handleUserInfo(bot, msg){
 function getDate(data){
     return (data.date1 ? data.date1 : data.start);
 }
-module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails, handleMyLeaves, handleReports, handleEmployees, handleAttendence, handleLeaves, handleSendMessage, handleUserInfo};
+module.exports = {handleStartMessage, handleClockIn, handleClockOut, handleAdminHolidays, handleAddNew, handleDate, handleViewHolidays, handleNotice, handleApplyLeave, handleSelectLeave, handleLeaveDate, handleDetails, handleMyLeaves, handleReports, handleEmployees, handleAttendence, handleLeaves, handleSendMessage, handleUserInfo, handleDeliverMessage};
