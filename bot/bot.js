@@ -20,6 +20,8 @@ module.exports.initBot = function(bot)
     const userRegex = /^\/user(\d)*$/;
     bot.on('message', async function(msg){
 
+        console.log("test")
+
         const leaveOptions = ['half day', 'full day', 'work from home', 'leave w/o pay', 'cancel'];
         var isAdmin = await AdminService.isRegistered(msg.from.id);
         var isEmployee = await EmployeeService.isRegistered(msg.from.id)
@@ -49,6 +51,7 @@ module.exports.initBot = function(bot)
                 }
             }
         } else if(isAdmin){
+            console.log(msg.text)
             if(msg.text.toLowerCase() === '/holidays'){
                 await MessageHandlder.handleAdminHolidays(bot, msg)
             } else if(msg.text.toLowerCase() === "add new"){
