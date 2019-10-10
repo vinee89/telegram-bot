@@ -109,7 +109,7 @@ async function generateReport(){
         }
     }
 
-    fs.writeFileSync('./report.csv', report, 'utf8');
+    fs.writeFileSync(`${__dirname}/report.csv`, report, 'utf8');
 }
 
 function calculateHoursMinutes(start, end){

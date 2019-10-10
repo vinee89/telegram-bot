@@ -4,7 +4,8 @@ const MessageHandlder = require('./util/Message_handlers')
 const utils = require('./util/index');
 const Leave = require('../models/Leaves.model');
 const constants = require('../constants/Leave.constants');
-const report = require('../report/reportGenerator')
+const report = require('../report/reportGenerator');
+const path = require('path')
 process.env.NTBA_FIX_319 = 1;
 process.env["NTBA_FIX_350"] = 1;
 
@@ -72,7 +73,7 @@ module.exports.initBot = function(bot)
                 await MessageHandlder.handleUserInfo(bot, msg);
             } else if(msg.text.toLowerCase() === '/sendreport'){
                 await report.generateReport();
-                bot.sendDocument(msg.chat.id, './report.csv', {}, {});
+                bot.sendDocument(msg.chat.id, `${path.resolve(__dirname, '..')}/report/report.csv`, {}, {});
             }
         }
     })
