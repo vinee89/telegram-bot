@@ -72,6 +72,7 @@ module.exports.initBot = function(bot)
             } else if(userRegex.test(msg.text.toLowerCase())){
                 await MessageHandlder.handleUserInfo(bot, msg);
             } else if(msg.text.toLowerCase() === '/sendreport'){
+                console.log(`${path.resolve(__dirname, '..')}/report/report.csv`)
                 await report.generateReport();
                 bot.sendDocument(msg.chat.id, `${path.resolve(__dirname, '..')}/report/report.csv`, {}, {});
             }
